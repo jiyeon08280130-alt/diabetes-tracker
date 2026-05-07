@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>당뇨 수첩</title>
+
+<!-- PWA Meta -->
+<meta name="theme-color" content="#2d5d4f" />
+<meta name="description" content="공복/식후 혈당을 기록하고 예상 당화혈색소를 확인하세요" />
+<link rel="manifest" href="./manifest.json" />
+
+<!-- iOS PWA Support -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="당뇨수첩" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f4efe6;
+    --bg-2: #ebe3d4;
+    --ink: #1f2421;
+    --ink-soft: #4a524d;
+    --ink-light: #7a8079;
+    --paper: #fbf8f1;
+    --line: #d8cdb8;
+    --line-soft: #e8dfc9;
+    --accent: #2d5d4f;
+    --accent-2: #c8553d;
+    --warn: #d4842a;
+    --good: #2d7a5f;
+    --bad: #b8412c;
+    --shadow: 0 2px 8px rgba(31,36,33,0.06), 0 8px 24px rgba(31,36,33,0.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR',sans-serif;
+    font-weight:400;
+    -webkit-font-smoothing:antialiased;
+  }
+  body{
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(45,93,79,0.06), transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(200,85,61,0.05), transparent 50%);
+    min-height:100vh;
+    padding:24px 16px 100px;
+    /* PWA 안전 영역 */
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(100px, env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:520px;margin:0 auto}
+
+  /* Header */
+  .header{
+    text-align:center;
+    padding:20px 0 28px;
+    border-bottom:1px dashed var(--line);
+    margin-bottom:24px;
+    position:relative;
+  }
+  .header::before{
+    content:"〜";
+    position:absolute;top:4px;left:50%;transform:translateX(-50%);
+    color:var(--accent-2);font-size:14px;letter-spacing:8px;
+  }
+  .header h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:38px;
+    letter-spacing:-0.02em;
+    line-height:1.1;
+    font-style:italic;
+  }
+  .header .sub{
+    font-size:11px;
+    color:var(--ink-soft);
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    margin-top:8px;
+  }
+
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:16px;
+    box-shadow:var(--shadow);
+    position:relative;
+  }
+  .card-title{
+    font-family:'Fraunces',serif;
+    font-size:18px;
+    font-weight:500;
+    margin-bottom:14px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  .card-title .label{
+    font-family:'IBM Plex Sans KR';
+    font-size:10px;
+    color:var(--ink-light);
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    font-weight:500;
+  }
+
+  .estimate{
+    background:linear-gradient(135deg, #2d5d4f 0%, #1e4439 100%);
+    color:#f4efe6;
+    text-align:center;
+    padding:28px 20px;
+    border:none;
+    position:relative;
+    overflow:hidden;
+  }
+  .estimate::before{
+    content:"";
+    position:absolute;
+    top:-50%;right:-20%;
+    width:200px;height:200px;
+    background:radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%);
+    border-radius:50%;
+  }
+  .estimate .label{
+    font-size:11px;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    opacity:0.7;
+    margin-bottom:8px;
+  }
+  .estimate .value{
+    font-family:'Fraunces',serif;
+    font-size:64px;
+    font-weight:500;
+    line-height:1;
+    font-style:italic;
+    margin-bottom:4px;
+  }
+  .estimate .value .unit{
+    font-size:20px;
+    font-style:normal;
+    opacity:0.7;
+    margin-left:4px;
+  }
+  .estimate .avg{
+    font-size:13px;
+    opacity:0.75;
+    margin-top:6px;
+  }
+  .estimate .status{
+    display:inline-block;
+    margin-top:12px;
+    padding:5px 14px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:500;
+    background:rgba(255,255,255,0.15);
+    backdrop-filter:blur(10px);
+  }
+  .estimate.empty{
+    background:var(--paper);
+    color:var(--ink-soft);
+    border:1px dashed var(--line);
+  }
+  .estimate.empty::before{display:none}
+
+  .input-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .field{display:flex;flex-direction:column}
+  .field label{
+    font-size:11px;
+    color:var(--ink-soft);
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+    font-weight:500;
+  }
+  .field input, .field select{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:11px 12px;
+    font-family:inherit;
+    font-size:15px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color 0.2s, background 0.2s;
+  }
+  .field input:focus, .field select:focus{
+    border-color:var(--accent);
+    background:#fff;
+  }
+  .field input::placeholder{color:var(--ink-light)}
+
+  .type-toggle{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    background:var(--bg);
+    padding:4px;
+    border-radius:10px;
+    margin-bottom:12px;
+  }
+  .type-toggle button{
+    background:transparent;
+    border:none;
+    padding:9px;
+    font-family:inherit;
+    font-size:13px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-radius:7px;
+    font-weight:500;
+    transition:all 0.2s;
+  }
+  .type-toggle button.active{
+    background:var(--paper);
+    color:var(--ink);
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .btn-add{
+    width:100%;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:13px;
+    border-radius:10px;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:500;
+    letter-spacing:0.05em;
+    cursor:pointer;
+    transition:transform 0.1s, background 0.2s;
+  }
+  .btn-add:hover{background:#000}
+  .btn-add:active{transform:scale(0.98)}
+
+  .records{list-style:none}
+  .record{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 0;
+    border-bottom:1px dashed var(--line-soft);
+  }
+  .record:last-child{border-bottom:none}
+  .record-info{display:flex;flex-direction:column;gap:2px}
+  .record-time{
+    font-size:11px;
+    color:var(--ink-light);
+    letter-spacing:0.05em;
+  }
+  .record-type{
+    font-size:13px;
+    color:var(--ink-soft);
+    font-weight:500;
+  }
+  .record-type.fasting{color:var(--accent)}
+  .record-type.postmeal{color:var(--accent-2)}
+  .record-value{
+    font-family:'Fraunces',serif;
+    font-size:24px;
+    font-weight:500;
+    font-style:italic;
+  }
+  .record-value .unit{
+    font-size:11px;
+    font-style:normal;
+    color:var(--ink-light);
+    margin-left:2px;
+    font-family:'IBM Plex Sans KR';
+  }
+  .record-value.high{color:var(--bad)}
+  .record-value.normal{color:var(--good)}
+  .record-value.low{color:var(--warn)}
+
+  .record-del{
+    background:transparent;
+    border:none;
+    color:var(--ink-light);
+    cursor:pointer;
+    padding:4px 8px;
+    font-size:16px;
+    margin-left:8px;
+    border-radius:4px;
+    transition:color 0.2s, background 0.2s;
+  }
+  .record-del:hover{color:var(--bad);background:rgba(184,65,44,0.08)}
+
+  .empty-state{
+    text-align:center;
+    padding:32px 0;
+    color:var(--ink-light);
+    font-size:13px;
+  }
+  .empty-state::before{
+    content:"📓";
+    display:block;
+    font-size:32px;
+    margin-bottom:8px;
+    opacity:0.5;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 10px;
+    text-align:center;
+  }
+  .stat .label{
+    font-size:10px;
+    color:var(--ink-light);
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+    font-weight:500;
+  }
+  .stat .val{
+    font-family:'Fraunces',serif;
+    font-size:24px;
+    font-weight:500;
+    font-style:italic;
+  }
+  .stat .val .unit{
+    font-size:11px;
+    font-style:normal;
+    color:var(--ink-light);
+    font-family:'IBM Plex Sans KR';
+  }
+
+  .chart-wrap{
+    margin-top:8px;
+    height:160px;
+    position:relative;
+  }
+  .chart-wrap svg{width:100%;height:100%}
+  .chart-empty{
+    text-align:center;
+    color:var(--ink-light);
+    font-size:12px;
+    padding:50px 0;
+  }
+
+  .filter-tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:12px;
+  }
+  .filter-tabs button{
+    flex:1;
+    background:transparent;
+    border:1px solid var(--line);
+    padding:7px;
+    font-family:inherit;
+    font-size:12px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-radius:7px;
+    transition:all 0.2s;
+  }
+  .filter-tabs button.active{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(100px);
+    background:var(--ink);
+    color:var(--paper);
+    padding:11px 22px;
+    border-radius:24px;
+    font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
+    transition:transform 0.3s;
+    z-index:100;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  .footnote{
+    text-align:center;
+    margin-top:20px;
+    font-size:11px;
+    color:var(--ink-light);
+    line-height:1.6;
+  }
+
+  @keyframes fadeIn{
+    from{opacity:0;transform:translateY(8px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .card{animation:fadeIn 0.4s ease-out backwards}
+  .card:nth-child(1){animation-delay:0.05s}
+  .card:nth-child(2){animation-delay:0.1s}
+  .card:nth-child(3){animation-delay:0.15s}
+  .card:nth-child(4){animation-delay:0.2s}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="header">
+    <h1>당뇨 수첩</h1>
+    <div class="sub">Daily Glucose Diary</div>
+  </header>
+
+  <div id="estimateCard" class="card estimate empty">
+    <div class="label">예상 당화혈색소</div>
+    <div class="value" id="hba1c">—<span class="unit">%</span></div>
+    <div class="avg" id="avgGlucose">기록을 추가하면 계산돼요</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">공복 평균</div>
+      <div class="val" id="fastingAvg">—<span class="unit"> mg/dL</span></div>
+    </div>
+    <div class="stat">
+      <div class="label">식후 평균</div>
+      <div class="val" id="postmealAvg">—<span class="unit"> mg/dL</span></div>
+    </div>
+    <div class="stat">
+      <div class="label">기록 일수</div>
+      <div class="val" id="dayCount">0<span class="unit"> 일</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      혈당 기록
+      <span class="label" id="todayDate"></span>
+    </div>
+
+    <div class="type-toggle">
+      <button type="button" class="active" data-type="fasting">공복</button>
+      <button type="button" data-type="postmeal">식후</button>
+    </div>
+
+    <div class="input-row">
+      <div class="field">
+        <label>혈당 (mg/dL)</label>
+        <input type="number" id="glucoseInput" placeholder="예: 110" inputmode="numeric" />
+      </div>
+      <div class="field">
+        <label>측정 시간</label>
+        <input type="datetime-local" id="timeInput" />
+      </div>
+    </div>
+
+    <button class="btn-add" id="addBtn">기록 추가</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      혈당 추이
+      <span class="label">최근 14일</span>
+    </div>
+    <div class="chart-wrap">
+      <svg id="chart" viewBox="0 0 500 160" preserveAspectRatio="none"></svg>
+      <div id="chartEmpty" class="chart-empty">기록이 쌓이면 그래프가 그려져요</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      기록 보기
+      <span class="label" id="recordCount">0건</span>
+    </div>
+    <div class="filter-tabs">
+      <button class="active" data-filter="all">전체</button>
+      <button data-filter="fasting">공복</button>
+      <button data-filter="postmeal">식후</button>
+    </div>
+    <ul class="records" id="recordsList"></ul>
+  </div>
+
+  <div class="footnote">
+    ※ 예상 당화혈색소는 평균 혈당 기반 추정치이며,<br/>실제 검사 결과와 차이가 있을 수 있어요.
+  </div>
+
+</div>
+
+<div class="toast" id="toast">기록되었습니다</div>
+
+<script>
+  const STORAGE_KEY = 'diabetes_records_v1';
+  let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let currentType = 'fasting';
+  let currentFilter = 'all';
+
+  function initTime(){
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('timeInput').value = now.toISOString().slice(0,16);
+  }
+
+  function showToday(){
+    const d = new Date();
+    const month = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    document.getElementById('todayDate').textContent = `${month[d.getMonth()]} ${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  document.querySelectorAll('.type-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.type-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentType = btn.dataset.type;
+    });
+  });
+
+  document.querySelectorAll('.filter-tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderRecords();
+    });
+  });
+
+  document.getElementById('addBtn').addEventListener('click', () => {
+    const val = parseInt(document.getElementById('glucoseInput').value);
+    const time = document.getElementById('timeInput').value;
+    if(!val || val < 20 || val > 800){
+      showToast('혈당 값을 확인해주세요');
+      return;
+    }
+    if(!time){
+      showToast('측정 시간을 입력해주세요');
+      return;
+    }
+    records.push({
+      id: Date.now(),
+      type: currentType,
+      value: val,
+      time: time
+    });
+    save();
+    document.getElementById('glucoseInput').value = '';
+    initTime();
+    showToast('기록되었습니다');
+    renderAll();
+  });
+
+  function deleteRecord(id){
+    records = records.filter(r => r.id !== id);
+    save();
+    renderAll();
+    showToast('삭제되었습니다');
+  }
+
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }
+
+  function category(v, type){
+    if(type === 'fasting'){
+      if(v < 70) return 'low';
+      if(v <= 99) return 'normal';
+      if(v <= 125) return 'warn';
+      return 'high';
+    } else {
+      if(v < 70) return 'low';
+      if(v <= 139) return 'normal';
+      if(v <= 199) return 'warn';
+      return 'high';
+    }
+  }
+
+  function categoryClass(c){
+    if(c === 'normal') return 'normal';
+    if(c === 'high' || c === 'warn') return 'high';
+    if(c === 'low') return 'low';
+    return '';
+  }
+
+  function renderRecords(){
+    const list = document.getElementById('recordsList');
+    let filtered = records.slice().sort((a,b) => new Date(b.time) - new Date(a.time));
+    if(currentFilter !== 'all'){
+      filtered = filtered.filter(r => r.type === currentFilter);
+    }
+    document.getElementById('recordCount').textContent = `${filtered.length}건`;
+
+    if(filtered.length === 0){
+      list.innerHTML = '<div class="empty-state">아직 기록이 없어요</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(r => {
+      const d = new Date(r.time);
+      const date = `${d.getMonth()+1}/${d.getDate()}`;
+      const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const cat = category(r.value, r.type);
+      const typeLabel = r.type === 'fasting' ? '공복' : '식후';
+      return `
+        <li class="record">
+          <div class="record-info">
+            <span class="record-type ${r.type}">${typeLabel}</span>
+            <span class="record-time">${date} · ${time}</span>
+          </div>
+          <div style="display:flex;align-items:center">
+            <span class="record-value ${categoryClass(cat)}">${r.value}<span class="unit"> mg/dL</span></span>
+            <button class="record-del" onclick="deleteRecord(${r.id})">×</button>
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function estimateHbA1c(){
+    if(records.length === 0) return null;
+    const avg = records.reduce((s,r) => s + r.value, 0) / records.length;
+    const hba1c = (avg + 46.7) / 28.7;
+    return { hba1c, avg };
+  }
+
+  function hba1cStatus(h){
+    if(h < 5.7) return { text: '정상 범위', color: 'rgba(45,122,95,0.3)' };
+    if(h < 6.5) return { text: '주의 (당뇨 전단계)', color: 'rgba(212,132,42,0.3)' };
+    if(h < 7) return { text: '양호한 관리', color: 'rgba(45,122,95,0.3)' };
+    if(h < 8) return { text: '관리 필요', color: 'rgba(212,132,42,0.3)' };
+    return { text: '주의 필요', color: 'rgba(184,65,44,0.3)' };
+  }
+
+  function renderEstimate(){
+    const card = document.getElementById('estimateCard');
+    const result = estimateHbA1c();
+    if(!result){
+      card.classList.add('empty');
+      document.getElementById('hba1c').innerHTML = '—<span class="unit">%</span>';
+      document.getElementById('avgGlucose').textContent = '기록을 추가하면 계산돼요';
+      return;
+    }
+    card.classList.remove('empty');
+    const status = hba1cStatus(result.hba1c);
+    document.getElementById('hba1c').innerHTML = `${result.hba1c.toFixed(1)}<span class="unit">%</span>`;
+    document.getElementById('avgGlucose').innerHTML = `
+      평균 혈당 ${result.avg.toFixed(0)} mg/dL · ${records.length}회 기록
+      <div class="status" style="background:${status.color}">${status.text}</div>
+    `;
+  }
+
+  function renderStats(){
+    const fasting = records.filter(r => r.type === 'fasting');
+    const postmeal = records.filter(r => r.type === 'postmeal');
+    const fAvg = fasting.length ? Math.round(fasting.reduce((s,r) => s + r.value, 0) / fasting.length) : null;
+    const pAvg = postmeal.length ? Math.round(postmeal.reduce((s,r) => s + r.value, 0) / postmeal.length) : null;
+
+    document.getElementById('fastingAvg').innerHTML = fAvg
+      ? `${fAvg}<span class="unit"> mg/dL</span>`
+      : `—<span class="unit"> mg/dL</span>`;
+    document.getElementById('postmealAvg').innerHTML = pAvg
+      ? `${pAvg}<span class="unit"> mg/dL</span>`
+      : `—<span class="unit"> mg/dL</span>`;
+
+    const days = new Set(records.map(r => r.time.slice(0,10))).size;
+    document.getElementById('dayCount').innerHTML = `${days}<span class="unit"> 일</span>`;
+  }
+
+  function renderChart(){
+    const svg = document.getElementById('chart');
+    const empty = document.getElementById('chartEmpty');
+
+    const now = new Date();
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - 13);
+    cutoff.setHours(0,0,0,0);
+
+    const recent = records.filter(r => new Date(r.time) >= cutoff)
+                          .sort((a,b) => new Date(a.time) - new Date(b.time));
+
+    if(recent.length < 2){
+      svg.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    const W = 500, H = 160;
+    const padL = 32, padR = 12, padT = 18, padB = 22;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+
+    const values = recent.map(r => r.value);
+    const minV = Math.min(...values, 70);
+    const maxV = Math.max(...values, 200);
+    const rangeV = maxV - minV || 1;
+
+    const minT = new Date(recent[0].time).getTime();
+    const maxT = new Date(recent[recent.length-1].time).getTime();
+    const rangeT = maxT - minT || 1;
+
+    function x(t){ return padL + ((new Date(t).getTime() - minT) / rangeT) * chartW; }
+    function y(v){ return padT + (1 - (v - minV) / rangeV) * chartH; }
+
+    let html = '';
+
+    const normalY1 = y(140);
+    const normalY2 = y(70);
+    if(normalY2 > normalY1){
+      html += `<rect x="${padL}" y="${normalY1}" width="${chartW}" height="${normalY2 - normalY1}" fill="rgba(45,122,95,0.06)" />`;
+    }
+
+    [maxV, (maxV+minV)/2, minV].forEach(v => {
+      const yy = y(v);
+      html += `<text x="${padL - 6}" y="${yy + 3}" text-anchor="end" font-size="9" fill="#7a8079" font-family="IBM Plex Sans KR">${Math.round(v)}</text>`;
+      html += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#e8dfc9" stroke-width="0.5" stroke-dasharray="2,3" />`;
+    });
+
+    const fastingPts = recent.filter(r => r.type === 'fasting');
+    const postmealPts = recent.filter(r => r.type === 'postmeal');
+
+    function drawLine(pts, color){
+      if(pts.length === 0) return '';
+      let path = '';
+      pts.forEach((r, i) => {
+        const cx = x(r.time);
+        const cy = y(r.value);
+        path += (i === 0 ? 'M' : 'L') + cx.toFixed(1) + ',' + cy.toFixed(1) + ' ';
+      });
+      let result = `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.7" />`;
+      pts.forEach(r => {
+        const cx = x(r.time);
+        const cy = y(r.value);
+        result += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${color}" />`;
+      });
+      return result;
+    }
+
+    html += drawLine(fastingPts, '#2d5d4f');
+    html += drawLine(postmealPts, '#c8553d');
+
+    [recent[0], recent[Math.floor(recent.length/2)], recent[recent.length-1]].forEach((r, i) => {
+      const d = new Date(r.time);
+      const label = `${d.getMonth()+1}/${d.getDate()}`;
+      const xx = x(r.time);
+      const anchor = i === 0 ? 'start' : (i === 2 ? 'end' : 'middle');
+      html += `<text x="${xx}" y="${H - 6}" text-anchor="${anchor}" font-size="9" fill="#7a8079" font-family="IBM Plex Sans KR">${label}</text>`;
+    });
+
+    html += `
+      <g transform="translate(${W - padR - 110}, ${padT - 8})">
+        <circle cx="4" cy="0" r="3" fill="#2d5d4f" />
+        <text x="11" y="3" font-size="9" fill="#4a524d" font-family="IBM Plex Sans KR">공복</text>
+        <circle cx="48" cy="0" r="3" fill="#c8553d" />
+        <text x="55" y="3" font-size="9" fill="#4a524d" font-family="IBM Plex Sans KR">식후</text>
+      </g>
+    `;
+
+    svg.innerHTML = html;
+  }
+
+  let toastTimer;
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function renderAll(){
+    renderRecords();
+    renderEstimate();
+    renderStats();
+    renderChart();
+  }
+
+  showToday();
+  initTime();
+  renderAll();
+
+  // Service Worker 등록 (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => console.log('SW registered'))
+        .catch(err => console.log('SW failed', err));
+    });
+  }
+</script>
+</body>
+</html>

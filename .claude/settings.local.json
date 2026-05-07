@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m http.server 8000)",
+      "Bash(python -m http.server 8000)",
+      "Bash(curl -s -o NUL -w \"HTTP Status: %{http_code}\\\\nContent-Type: %{content_type}\\\\n\" http://localhost:8000/)",
+      "Bash(curl -s -o NUL -w \"manifest.json: %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/manifest.json)",
+      "Bash(curl -s -o NUL -w \"service-worker.js: %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/service-worker.js)",
+      "Bash(curl -s -o NUL -w \"icon-192.png: %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/icon-192.png)",
+      "Bash(curl -s -o NUL -w \"icon-512.png: %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/icon-512.png)",
+      "Bash(curl -s http://localhost:8000/)",
+      "Bash(curl -s -o NUL -w \"index: %{http_code}\\\\n\" http://localhost:8000/diabetes-tracker/)",
+      "Bash(curl -s -o NUL -w \"manifest: %{http_code}\\\\n\" http://localhost:8000/diabetes-tracker/manifest.json)",
+      "Bash(curl -s -o NUL -w \"sw: %{http_code}\\\\n\" http://localhost:8000/diabetes-tracker/service-worker.js)",
+      "Bash(python *)",
+      "Bash(curl -s -o NUL -w \"/ : %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/)",
+      "Bash(curl -s -o NUL -w \"manifest.json : %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/manifest.json)",
+      "Bash(curl -s -o NUL -w \"service-worker.js : %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/service-worker.js)",
+      "Bash(curl -s -o NUL -w \"icon-192.png : %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/icon-192.png)",
+      "Bash(curl -s -o NUL -w \"icon-512.png : %{http_code} \\(%{content_type}\\)\\\\n\" http://localhost:8000/icon-512.png)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
